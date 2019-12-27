@@ -38,19 +38,15 @@ class BatchRenorm(torch.jit.ScriptModule):
 
     @property
     def rmax(self) -> torch.Tensor:
-        return 1.001 ** self.num_batches_tracked.float()
-
-    @property
-    def rmin(self) -> torch.Tensor:
-        return 1 / self.rmax
+        return (2 / 35000 * self.num_batches_tracked + 25 / 35).clamp_(
+            1.0, 3.0
+        )
 
     @property
     def dmax(self) -> torch.Tensor:
-        return 0.001 * self.num_batches_tracked.float()
-
-    @property
-    def dmin(self) -> torch.Tensor:
-        return -self.dmax
+        return (5 / 20000 * self.num_batches_tracked - 25 / 20).clamp_(
+            0.0, 5.0
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         self._check_input_dim(x)
@@ -64,11 +60,11 @@ class BatchRenorm(torch.jit.ScriptModule):
             ).sqrt()
             r = (
                 batch_std.detach() / self.running_std.view_as(batch_std)
-            ).clamp_(self.rmin, self.rmax)
+            ).clamp_(1 / self.rmax, self.rmax)
             d = (
                 (batch_mean.detach() - self.running_mean.view_as(batch_mean))
                 / self.running_std.view_as(batch_std)
-            ).clamp_(self.dmin, self.dmax)
+            ).clamp_(-self.dmax, self.dmax)
             x = (x - batch_mean) / batch_std * r + d
             self.running_mean += self.momentum * (
                 batch_mean.detach().squeeze() - self.running_mean

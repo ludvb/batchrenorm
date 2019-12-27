@@ -24,7 +24,8 @@ def test_step1(kwargs):
 @pytest.mark.seed_rng()
 def test_ablation(kwargs):
     br = batchrenorm.BatchRenorm1d(5, eps=0.0, **kwargs)
-    xs = torch.randn(10, 5, 5)
+    br.num_batches_tracked = torch.tensor(50000)
+    xs = torch.randn(10, 5, 5) * 10
     xs_mean = xs.mean((0, 1))
     xs_var = xs.var((0, 1), unbiased=False)
 
