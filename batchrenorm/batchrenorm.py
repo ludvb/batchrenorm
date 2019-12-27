@@ -8,7 +8,7 @@ class BatchRenorm(torch.jit.ScriptModule):
     def __init__(
         self,
         num_features: int,
-        eps: float = 1e-5,
+        eps: float = 1e-3,
         momentum: float = 0.01,
         affine: bool = True,
     ):
@@ -55,9 +55,7 @@ class BatchRenorm(torch.jit.ScriptModule):
         if self.training:
             dims = [i for i in range(x.dim() - 1)]
             batch_mean = x.mean(dims, keepdim=True)
-            batch_std = (
-                x.var(dims, unbiased=False, keepdim=True) + self.eps
-            ).sqrt()
+            batch_std = x.std(dims, unbiased=False, keepdim=True) + self.eps
             r = (
                 batch_std.detach() / self.running_std.view_as(batch_std)
             ).clamp_(1 / self.rmax, self.rmax)

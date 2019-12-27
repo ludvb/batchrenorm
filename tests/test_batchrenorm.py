@@ -6,16 +6,12 @@ import torch
 @pytest.mark.parametrize("kwargs", [{"affine": True}, {"affine": False}])
 def test_step1(kwargs):
     for _ in range(100):
-        batch_renorm = batchrenorm.BatchRenorm1d(10, **kwargs)
+        batch_renorm = batchrenorm.BatchRenorm1d(10, eps=0.0, **kwargs)
         x = torch.randn(100, 10)
         assert (
             batch_renorm(x)
             - torch.nn.functional.batch_norm(
-                x,
-                torch.zeros(10),
-                torch.ones(10),
-                eps=batch_renorm.eps,
-                training=True,
+                x, torch.zeros(10), torch.ones(10), eps=0.0, training=True,
             )
         ).abs().max() < 1e-5
 
