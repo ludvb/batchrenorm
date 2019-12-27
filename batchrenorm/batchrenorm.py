@@ -54,8 +54,8 @@ class BatchRenorm(torch.jit.ScriptModule):
             x = x.transpose(1, -1)
         if self.training:
             dims = [i for i in range(x.dim() - 1)]
-            batch_mean = x.mean(dims, keepdim=True)
-            batch_std = x.std(dims, unbiased=False, keepdim=True) + self.eps
+            batch_mean = x.mean(dims)
+            batch_std = x.std(dims, unbiased=False) + self.eps
             r = (
                 batch_std.detach() / self.running_std.view_as(batch_std)
             ).clamp_(1 / self.rmax, self.rmax)
@@ -65,10 +65,10 @@ class BatchRenorm(torch.jit.ScriptModule):
             ).clamp_(-self.dmax, self.dmax)
             x = (x - batch_mean) / batch_std * r + d
             self.running_mean += self.momentum * (
-                batch_mean.detach().squeeze() - self.running_mean
+                batch_mean.detach() - self.running_mean
             )
             self.running_std += self.momentum * (
-                batch_std.detach().squeeze() - self.running_std
+                batch_std.detach() - self.running_std
             )
             self.num_batches_tracked += 1
         else:
