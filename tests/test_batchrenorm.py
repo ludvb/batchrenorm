@@ -11,7 +11,7 @@ def test_step1(kwargs):
         assert (
             batch_renorm(x)
             - torch.nn.functional.batch_norm(
-                x, torch.zeros(10), torch.ones(10), eps=0.0, training=True,
+                x, torch.zeros(10), torch.ones(10), eps=0.0, training=True
             )
         ).abs().max() < 1e-5
 
