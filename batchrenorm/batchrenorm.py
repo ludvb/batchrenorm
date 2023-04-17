@@ -48,14 +48,25 @@ class BatchRenorm(torch.jit.ScriptModule):
             0.0, 5.0
         )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, mask = None) -> torch.Tensor:
+        '''
+        Mask is a boolean tensor used for indexing, where True values are padded
+        i.e for 3D input, mask should be of shape (batch_size, seq_len)
+        mask is used to prevent padded values from affecting the batch statistics
+        '''
         self._check_input_dim(x)
         if x.dim() > 2:
             x = x.transpose(1, -1)
         if self.training:
             dims = [i for i in range(x.dim() - 1)]
-            batch_mean = x.mean(dims)
-            batch_std = x.std(dims, unbiased=False) + self.eps
+            if mask is not None:
+                z = x[~mask]
+                batch_mean = z.mean(0) 
+                batch_std = z.std(0, unbiased=False) + self.eps
+            else:
+                batch_mean = x.mean(dims)
+                batch_std = x.std(dims, unbiased=False) + self.eps
+
             r = (
                 batch_std.detach() / self.running_std.view_as(batch_std)
             ).clamp_(1 / self.rmax, self.rmax)
